@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using SportsStore.Models;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace SportsStore
 {
@@ -24,6 +25,15 @@ namespace SportsStore
             services.AddDbContext<ApplicationDbContext>(options =>
                 options.UseSqlServer(
                     Configuration["Data:SportStoreProducts:ConnectionString"]));
+
+            services.AddDbContext<AppIdentityDbContext>(options =>
+              options.UseSqlServer(
+                  Configuration["Data:SportStoreIdentity:ConnectionString"]));
+
+            services.AddIdentity<IdentityUser, IdentityRole>()
+                .AddEntityFrameworkStores<AppIdentityDbContext>()
+                .AddDefaultTokenProviders();
+
             services.AddTransient<IProductRepository, EFProductRepository>();
             services.AddScoped<Cart>(sp => SessionCart.GetCart(sp));
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
@@ -35,10 +45,11 @@ namespace SportsStore
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
         {
-            app.UseDeveloperExceptionPage();
-            app.UseStatusCodePages();
-            app.UseStaticFiles();
+            app.UseDeveloperExceptionPage(); // Выводит ошибки в режиме разработки
+            app.UseStatusCodePages(); // Выводит код ошибок в продакшене
+            app.UseStaticFiles(); // Работает со статическими файлами фото и т.д. из wwwroot
             app.UseSession();
+            app.UseAuthentication();
             app.UseMvc(routes => {
                 routes.MapRoute(
                     name: null,
@@ -80,6 +91,7 @@ namespace SportsStore
                     template: "{controller}/{action}/{id?}");
             });
             SeedData.EnsurePopulated(app);
+            IdentitySeedData.EnsurePopulated(app);
         }
     }
 }
